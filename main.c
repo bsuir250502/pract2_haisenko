@@ -7,25 +7,24 @@ const int stringSize = 30;
 
 typedef struct field_t {
     int cell;
-    int probable[NUM_OF_VALUES];
-    int probableNum;
     int isBasic;
 } field_t;
 
 field_t **importField();
 void solvingSudoku(field_t **field);
-int checkingPossibleCells(field_t **field);
-void checkCellSquare(field_t **field, int x, int y, int *probableNum);
-void checkCellX(field_t **field, int x, int y, int *probableNum);
-void checkCellY(field_t **field, int x, int y, int *probableNum);
-void settingCells(field_t **field);
-void showField(field_t **field);
+int settingValue(field_t **field, int x, int y);
+int checkCellSquare(field_t **field, int x, int y, int number);
+int checkCellX(field_t **field, int x, int y, int number);
+int checkCellY(field_t **field, int x, int y, int number);
+void outputField(field_t **field);
 
 int main(int argc, char *argv[])
 {
     field_t **field;
     field = importField();
+    outputField(field);
     solvingSudoku(field);
+    outputField(field);
     return 0;
 }
 
@@ -48,137 +47,111 @@ field_t **importField()
             if (field[i][j].cell) {
                 field[i][j].isBasic = 1;
             }
-            printf("%d ", field[i][j].cell);            /**/
         }
         tempChar = getc(inputFile);
         if (tempChar != '\n' && !feof(inputFile)) {
             printf("Wrong field.\n");
             exit(1);
         }
-        printf("\n");                                   /**/
     }
     return field;
 }
 
 void solvingSudoku(field_t **field)
 {
-    while (checkingPossibleCells(field)) {
-        settingCells(field);
+    if (settingValue(field, 0, 0)) {
+        printf("No solution\n");
     }
-    settingCells(field);
-    showField(field);
 }
 
-int checkingPossibleCells(field_t **field)
+int settingValue(field_t **field, int x, int y)
 {
-    int i, j, k, probableNum[NUM_OF_VALUES], returnNumber = 0;
-    printf("\n");
-    for (i = 0; i < NUM_OF_VALUES; i++) {
-        for (j = 0; j < NUM_OF_VALUES; j++) {
-            if (!field[i][j].isBasic) {
-                field[i][j].probableNum = 0;
-                checkCellSquare(field, i, j, probableNum);
-                checkCellX(field, i, j, probableNum);
-                checkCellY(field, i, j, probableNum);
-                for (k = 0; k < NUM_OF_VALUES; k++) {
-                    if (probableNum[k]) {
-                        field[i][j].probable[field[i][j].probableNum] = k + 1;
-                        field[i][j].probableNum++;
-                    }
-                }
-                if (field[i][j].probableNum > 1) {
-                    returnNumber = 1;
-                }
-            }
-            printf("%d ", field[i][j].probableNum);
-        }
-        printf("\n");
-    }
-    return returnNumber;
-}
+    int number, nextX, nextY, isLastCell;
+    ((x + 1) == NUM_OF_VALUES) ? (nextX = 0, nextY = y + 1) : (nextX = x + 1, nextY = y);
+    (nextY == NUM_OF_VALUES) ? (isLastCell = 1) : (isLastCell = 0);
 
-void checkCellSquare(field_t **field, int x, int y, int *probableNum)
-{
-    int i, j, startX, startY, number;
-    startX = x - (x % 3);
-    startY = y - (y % 3);
-    for (number = 1; number <= NUM_OF_VALUES; number++) {
-        for (i = startX; i < (startX + 3); i++) {
-            for (j = startY; j < (startY + 3); j++) {
-                if (number == field[i][j].cell) {
-                    i = startX + 3;
-                    break;
-                }
-            }
-        }
-
-        if (j == (startY + 3) && i == (startX + 3)) {
-            probableNum[number - 1] = 1;
+    if (field[y][x].isBasic) {
+        if (isLastCell) {
+            return 0;
         } else {
-            probableNum[number - 1] = 0;
-        }
-    }
-}
-
-void checkCellX(field_t **field, int x, int y, int *probableNum)
-{
-    int i, number;
-    for (number = 1; number <= NUM_OF_VALUES; number++) {
-        for (i = 0; i < NUM_OF_VALUES; i++) {
-            if (i == x) {
-                continue;
-            }
-            if (number == field[i][y].cell) {
-                break;
+            if (settingValue(field, nextX , nextY)) {
+                return 1;
+            } else {
+                return 0;
             }
         }
-
-        if (i == NUM_OF_VALUES && probableNum[number - 1]) {
-            probableNum[number - 1] = 1;
-        } else {
-            probableNum[number - 1] = 0;
-        }
     }
-}
-
-void checkCellY(field_t **field, int x, int y, int *probableNum)
-{
-    int j, number;
-    for (number = 1; number <= NUM_OF_VALUES; number++) {
-        if (!probableNum[number - 1]) {
+    
+    for (number = 1; number < (NUM_OF_VALUES + 1); number++) {
+        if (checkCellSquare(field, x, y, number)) {
             continue;
         }
-        for (j = 0; j < NUM_OF_VALUES; j++) {
-            if (j == y) {
-                continue;
-            }
-            if (number == field[x][j].cell) {
-                break;
-            }
+        if (checkCellX(field, x, y, number)) {
+            continue;
         }
-
-        if (j == NUM_OF_VALUES && probableNum[number - 1]) {
-            probableNum[number - 1] = 1;
+        if (checkCellY(field, x, y, number)) {
+            continue;
+        }
+        field[y][x].cell = number;
+        if (isLastCell) {
+            return 0;
         } else {
-            probableNum[number - 1] = 0;
-        }
-    }
-} 
-
-void settingCells(field_t **field)
-{
-    int i, j;
-    for (i = 0; i < NUM_OF_VALUES; i++) {
-        for (j = 0; j < NUM_OF_VALUES; j++) {
-            if (field[i][j].probableNum == 1) {
-                field[i][j].cell = field[i][j].probable[0];
-                field[i][j].probableNum--;
+            if (settingValue(field, nextX , nextY)) {
+                field[y][x].cell = 0;
+                continue;
+            } else {
+                return 0;
             }
         }
     }
+    return 1;
 }
 
-void showField(field_t **field)
+int checkCellSquare(field_t **field, int x, int y, int number)
+{
+    int i, j, endJ, endI;
+    endJ = x - (x % 3) + 3;
+    endI = y - (y % 3) + 3;
+
+    for (i = endI - 3; i < endI; i++) {
+        for (j = endJ - 3; j < endJ; j++) {
+            if (number == field[i][j].cell) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int checkCellX(field_t **field, int x, int y, int number)
+{
+    int i;
+    for (i = 0; i < NUM_OF_VALUES; i++) {
+        if (i == x) {
+            continue;
+        }
+        if (number == field[y][i].cell) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int checkCellY(field_t **field, int x, int y, int number)
+{
+    int j;
+    for (j = 0; j < NUM_OF_VALUES; j++) {
+        if (j == y) {
+            continue;
+        }
+        if (number == field[j][x].cell) {
+            return 1;
+        }
+    }
+    return 0;
+} 
+
+void outputField(field_t **field)
 {
     int i, j;
     printf("\n");
