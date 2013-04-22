@@ -17,14 +17,15 @@ int checkCellSquare(field_t **field, int x, int y, int number);
 int checkCellX(field_t **field, int x, int y, int number);
 int checkCellY(field_t **field, int x, int y, int number);
 void outputField(field_t **field);
+void freeField(field_t **field);
 
 int main(int argc, char *argv[])
 {
     field_t **field;
     field = importField();
-    outputField(field);
     solvingSudoku(field);
     outputField(field);
+    freeField(field);
     return 0;
 }
 
@@ -54,6 +55,7 @@ field_t **importField()
             exit(1);
         }
     }
+    fclose(inputFile);
     return field;
 }
 
@@ -61,6 +63,7 @@ void solvingSudoku(field_t **field)
 {
     if (settingValue(field, 0, 0)) {
         printf("No solution\n");
+        exit(1);
     }
 }
 
@@ -154,11 +157,23 @@ int checkCellY(field_t **field, int x, int y, int number)
 void outputField(field_t **field)
 {
     int i, j;
-    printf("\n");
+    FILE *outputFile;
+    outputFile = fopen("out.sudoku", "w");
+
     for (i = 0; i < NUM_OF_VALUES; i++) {
         for (j = 0; j < NUM_OF_VALUES; j++) {
-            printf("%d ", field[i][j].cell);
+            fprintf(outputFile, "%d", field[i][j].cell);
         }
-        printf("\n");
+        fprintf(outputFile, "\n");
     }
+    fclose(outputFile);
+}
+
+void freeField(field_t **field)
+{
+    int i;
+    for (i = 0; i < fieldSize; i++) {
+        free(field[i]);
+    }
+    free(field);
 }
